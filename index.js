@@ -6,8 +6,9 @@ const LETTERBOXD_RSS_FEED_URL = "https://letterboxd.com/avnishjha/rss/";
 
 app.get("/latest-movies", async (req, res) => {
   try {
-    const limit = 5;
-
+    const limit = parseInt(req.query.limit) || 5;
+    const username = req.query.username;
+    var LETTERBOXD_RSS_FEED_URL = `https://letterboxd.com/${username}/rss/`;
     // Fetch the RSS feed
     const response = await fetch(LETTERBOXD_RSS_FEED_URL);
     const text = await response.text();
