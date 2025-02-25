@@ -14,7 +14,7 @@ const LETTERBOXD_RSS_FEED_URL = "https://letterboxd.com/avnishjha/rss/";
 app.get("/latest-movies", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 5;
-    const username = req.query.username || "avnishjha"; // Add default username
+    const username = req.query.username || "avnishjha";
 
     const LETTERBOXD_RSS_FEED_URL = `https://letterboxd.com/${username}/rss/`;
     const response = await fetch(LETTERBOXD_RSS_FEED_URL);
@@ -22,15 +22,27 @@ app.get("/latest-movies", async (req, res) => {
 
     // Parse the RSS feed
     const movies = [];
-    const regex = /<item>.*?<title>(.*?)<\/title>.*?<link>(.*?)<\/link>.*?<pubDate>(.*?)<\/pubDate>.*?<description>(?:.*?src="(.*?)")?.*?<\/description>/gs;
+    const regex = /<item>.*?<title>(.*?),\s*(\d{4})\s*-\s*((?:★|½)*)\s*<\/title>.*?<link>(.*?)<\/link>.*?<pubDate>(.*?)<\/pubDate>.*?<description>(?:.*?src="(.*?)")?.*?<\/description>/gs;
     let match;
     while ((match = regex.exec(text)) && movies.length < limit) {
+      // Convert star symbols to numeric rating
+      const ratingText = match[3] || "";
+      let rating = 0;
+      
+      if (ratingText) {
+        const fullStars = (ratingText.match(/★/g) || []).length;
+        const hasHalf = ratingText.includes('½');
+        rating = fullStars + (hasHalf ? 0.5 : 0);
+      }
+      
       movies.push({
-        title: match[1],
-        link: match[2],
-        published: new Date(match[3]).toISOString(),
-        imageUrl: match[4] || "", // Changed null to empty string for better Framer compatibility
-        summary: match[4] ? match[0].split('"/>')[1].replace(/<[^>]*>/g, "").trim() : "",
+        title: match[1].trim(),
+        year: parseInt(match[2]),
+        rating: rating,
+        link: match[4],
+        published: new Date(match[5]).toISOString(),
+        imageUrl: match[6] || "",
+        summary: match[6] ? match[0].split('"/>')[1].replace(/<[^>]*>/g, "").trim() : "",
       });
     }
 
